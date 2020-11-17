@@ -5,6 +5,7 @@ set -e
 
 readonly DEFAULT_RUNNER_DIR="/tmp/sca_runner/downloads"
 readonly DEFAULT_RUNNER_TESTCASE="/opt/sca_runner/testcase"
+readonly RANDOM_STRING=$(cat /dev/random | LC_CTYPE=C tr -dc "[:alpha:]" | head -c 20)
 
 function print_usage() {
     echo
@@ -18,6 +19,7 @@ function print_usage() {
     echo -e " --repo\t\tGitHub repository url."
     echo -e " --engine\tAssessment engine."
     echo -e " --testcase\tFolder containing the testcase inputs/outputs subfolders. Default: $DEFAULT_RUNNER_TESTCASE."
+    # echo -e " --verbose\t\tShow extended outputs."
     echo -e " --help\t\tShow this help text and exit."
     echo
     echo "Example:"
@@ -64,43 +66,31 @@ function assert_not_empty() {
     fi
 }
 
-# assert arg is_equal to expected output
-function assert() {
-    result="$(echo $1 | sed -e "s/ //g")"
-    expected="$($(echo cat $OUTPUT) | sed -e 's/ //g')"
-    echo $result
-    echo $expected
-
-    if test $result = $expected; then
-        echo "Passed"
-    else
-        echo "Failed"
-    fi
-}
-
-function select_engine() {
-    main program
-    check APP mime-type and set the require caller
-
-    case $(echo ${APP} | awk -F. '{print $2}') in
-    py)
-        assert "$(python $APP <$INPUT)"
+function run_test() {
+    case $1 in
+    python)
+        python test
+        shift
         ;;
-    js)
-        assert "$(node $APP "$(cat $INPUT)")"
+    javascript)
+        npm run test
+        shift
         ;;
     *)
-        echo "\n>> languageSupportError: solution file language not supported. Require executable file type."
-        exit 3
+        log_error "languageSupportError: solution file language not supported. Require executable file type."
+        print_usage
+        exit 1
         ;;
     esac
 }
 
+# execute test with test case and returns the number of test passed.
+# response: 0 => failed, 1...3 => passed
 function run() {
     local runner_dir="$DEFAULT_RUNNER_DIR"
+    local testcase="$DEFAULT_RUNNER_TESTCASE"
     local repo=""
     local engine=""
-    local testcase=""
 
     while [[ $# -gt 0 ]]; do
         local key="$1"
@@ -142,10 +132,26 @@ function run() {
 
     log_info ">> Starting SCA Assessment Runner"
 
-    # mkdir $dir && cd $dir
-    # git clone $repo
+    echo
+    echo "--repo: $repo"
+    echo "--engine: $engine"
+    echo "--dir: $runner_dir"
+    echo "--testcase: $testcase"
+    echo
+
+    cd "$runner_dir" &&
+        git clone "$repo" "$RANDOM_STRING" &&
+        cd $RANDOM_STRING
+
+    # echo "copying testcase folder $testcase => ./$RANDOM_STRING/testcase"
+    # cp -R $testcase "$RANDOM_STRING/testcase"
+
+    log_info "Invoke test with {$engine} engine"
+    run_test $engine
 
     log_info ">> Finished running SCA Assessment"
+
+    return $?
 }
 
 run "$@"

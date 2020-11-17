@@ -29,15 +29,7 @@ def gen_get_link(path):
             row_number += 1
 
 
-def invoke_runner(command):
-    # import os
-
-    # path = os.path.abspath('./scripts/runner.sh')
-    # os.system(f'{path} ')
-    args = shlex.split(command)
-    print(args)
-    args[0]
-    # args = shlex.split(command).insert(0, "./scripts/runner.sh")
-    # response = subprocess.Popen(args)
-
-    # return response
+def invoke_runner(command, timeout=500):
+    args = shlex.split(f"./scripts/runner.sh {command}")
+    response = subprocess.Popen(args)
+    return response.wait(timeout)

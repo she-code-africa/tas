@@ -5,7 +5,7 @@ from flask import Blueprint
 from flask import request
 from werkzeug.utils import secure_filename
 
-# from srv import helper
+from srv import helper
 
 
 bp = Blueprint("file", __name__)
@@ -24,11 +24,20 @@ def upload_file():
         return 'No selected file'
 
     file.filename = secure_filename(file.filename)
-    file.save(os.path.join(csv_path))
+    file.save(csv_path)
 
-    # for s in helper.gen_get_link(csv_path):
-    #     command = f"--engine {s['track']} --repo {s['repo']} --dir {csv_path}"
-    #     helper.invoke_runner(command)
+    tempdir = os.path.dirname(csv_path)
+    for s in helper.gen_get_link(csv_path):
+        if s['repo'] == '':
+            # TODO: properly handle missing repo links.
+            continue
+        command = f"--engine {str(s['track']).lower()} --repo {s['repo']} --dir {tempdir}"
+        response = helper.invoke_runner(command)
+        # TODO: handle response
+        # if response == 1:
+        #     print("failed")
+        # else:
+        #     print('passed')
 
     os.close(csv_fd)
     os.unlink(csv_path)
