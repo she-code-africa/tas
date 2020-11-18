@@ -1,12 +1,10 @@
-import os
 import tempfile
 
-from flask import Blueprint
-from flask import request
+from flask import Blueprint, request, abort
+from flask.helpers import send_from_directory
 from werkzeug.utils import secure_filename
 
 from srv import helper
-
 
 bp = Blueprint("file", __name__)
 
@@ -17,29 +15,15 @@ def upload_file():
     if 'file' not in request.files:
         return 'No file part'
 
-    csv_fd, csv_path = tempfile.mkstemp()
     file = request.files['file']
-
     if file.filename == '':
         return 'No selected file'
 
+    tempdir = tempfile.mkdtemp()
     file.filename = secure_filename(file.filename)
-    file.save(csv_path)
 
-    tempdir = os.path.dirname(csv_path)
-    for s in helper.gen_get_link(csv_path):
-        if s['repo'] == '':
-            # TODO: properly handle missing repo links.
-            continue
-        command = f"--engine {str(s['track']).lower()} --repo {s['repo']} --dir {tempdir}"
-        response = helper.invoke_runner(command)
-        # TODO: handle response
-        # if response == 1:
-        #     print("failed")
-        # else:
-        #     print('passed')
-
-    os.close(csv_fd)
-    os.unlink(csv_path)
-
-    return f'File: {file.filename} Uploaded.'
+    response_filename = helper.async_csv_worker(file, tempdir)
+    try:
+        return send_from_directory(tempdir, filename=response_filename, as_attachment=True)
+    except FileNotFoundError:
+        abort(404)
