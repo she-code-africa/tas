@@ -6,12 +6,12 @@ import subprocess
 from werkzeug.utils import secure_filename
 
 
-def gen_rand_string(char_length=10, has_special_character=True):
+def gen_rand_string(char_length=10, has_special_character=False):
     """Generate random string with the specificed character char_length"""
     random_str = ''
 
     for _ in range(char_length):
-        if has_special_character == False:
+        if has_special_character == True:
             random_int = random.randint(0, 255)
         else:
             random_int = random.randint(97, 97 + 26 - 1)
