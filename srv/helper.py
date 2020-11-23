@@ -3,8 +3,6 @@ import shlex
 import random
 import subprocess
 
-from werkzeug.utils import secure_filename
-
 
 def gen_rand_string(char_length=10, has_special_character=False):
     """Generate random string with the specificed character char_length"""
@@ -36,14 +34,23 @@ def async_csv_worker(file, tempdir):
     with open(output_file, 'w', newline='') as out:
         with open(input_file) as file:
             reader = csv.DictReader(file)
-            writer = csv.DictWriter(out, fieldnames=reader.fieldnames)
 
+            fieldnames = list.copy(reader.fieldnames)
+            if fieldnames.__contains__('Score') == False:
+                fieldnames.append('Score')
+
+            writer = csv.DictWriter(out, fieldnames=fieldnames)
             writer.writeheader()
+
             for row in reader:
-                if row['GITHUB LINK'] == '':
+                repo = row['Please submit the URL to your technical assessment solution here']
+                track = row['What field are you signing up for?']
+                # level = row['What track level are you signing up for']
+
+                if repo == '':
                     continue
 
-                command = f"--engine {str(row['TRACK']).lower()} --repo {row['GITHUB LINK']} --dir {tempdir}"
+                command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
                 response = invoke_runner(command)
 
                 if response >= 1:
