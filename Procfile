@@ -1,1 +1,1 @@
-web: FLASK_APP=srv FLASK_ENV=development flask run --port 8080
+web: FLASK_APP=srv FLASK_ENV=development flask run --port ${PORT}
