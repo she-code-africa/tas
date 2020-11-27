@@ -2,35 +2,26 @@ import os
 
 from flask import Flask
 
+from srv import root, file
+from config import config
 
-def create_app(test_config=None):
+
+def create_app(config_name=None) -> Flask:
     """Create and configure an instance of the Flask application."""
+
+    env_app_settings = config_name
+    if not config_name:
+        try:
+            env_app_settings = os.environ['APP_SETTINGS']
+        except:
+            env_app_settings = 'production'
+
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        # a default secret that should be overridden by the instance config
-        SECRET_KEY="dev",
-    )
-
-    if test_config is None:
-        # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
-    else:
-        # load the test config if passed in
-        app.config.update(test_config)
-
-    # ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
-
-    # apply the blueprints to the app
-    from srv import file, root
+    app.config.from_object(config[env_app_settings])
 
     app.register_blueprint(root.bp)
     app.register_blueprint(file.bp)
-
-    # make url_for('index') == url_for('root.index')
-    # app.add_url_rule("/", endpoint="index")
-
     return app
+
+
+app = create_app()
