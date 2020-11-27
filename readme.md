@@ -1,25 +1,51 @@
 # Track Assessment Server
 
-## Install
+Automates track assessment scoring using test suites and testcase for each specific track.
 
-Install required packages
+## Setup local environment
 
-* Requirement: Python 3
+    Required: Python version: 3.6^
 
-``` sh
-pip install -e . '.[test]'
+``` shell
+$: python -m pip install virtualenv
+
+$: python -m venv venv/
+
+$: source venv/bin/activate
 ```
 
-## Run
+## Install packages
 
-* Run Flask
-
-``` sh
-FLASK_APP=srv FLASK_ENV=development flask run
+``` shell
+$: pip install -r requirements.txt
 ```
 
-## Test
+## Running the server
 
-``` sh
-pytest
+* __Expose required common environment variables__
+
+``` shell
+$: export APP_SETTINGS="development"
+```
+
+### Using Flask (Hot Reload)
+
+``` shell
+$: export FLASK_APP=srv
+
+$: export FLASK_ENV=development
+
+$: flask run -p 8000
+```
+
+### Using Gunicorn
+
+``` shell
+$: gunicorn srv:app
+```
+
+## Testing
+
+``` shell
+$: pytest
 ```
