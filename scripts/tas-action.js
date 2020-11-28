@@ -1,5 +1,5 @@
-// const TAS_ADDR = 'https://tas-feat-server-na6izd3flr0gvw.herokuapp.com/'
-const TAS_ADDR = 'https://kj2ifn9s.tunnelto.dev'
+ const TAS_ADDR = 'https://tas-feat-server-na6izd3flr0gvw.herokuapp.com'
+// const TAS_ADDR = 'https://kj2ifn9s.tunnelto.dev'
 
 
 // uploadAllRecords uploads all the spreadsheet records to the tas server.
