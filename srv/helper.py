@@ -3,6 +3,11 @@ import shlex
 import random
 import subprocess
 
+REPO_LINK = 'Please submit the URL to your technical assessment solution here'
+TRACK = 'What field are you signing up for?'
+LEVEL = 'What track level are you signing up for'
+SCORE = 'Score'
+
 
 def gen_rand_string(char_length=10, has_special_character=False):
     """Generate random string with the specificed character char_length"""
@@ -36,29 +41,62 @@ def async_csv_worker(file, tempdir):
             reader = csv.DictReader(file)
 
             fieldnames = list.copy(reader.fieldnames)
-            if fieldnames.__contains__('Score') == False:
-                fieldnames.append('Score')
+            if fieldnames.__contains__(SCORE) == False:
+                fieldnames.append(SCORE)
 
             writer = csv.DictWriter(out, fieldnames=fieldnames)
             writer.writeheader()
 
             for row in reader:
-                repo = row['Please submit the URL to your technical assessment solution here']
-                track = row['What field are you signing up for?']
-                # level = row['What track level are you signing up for']
+                repo = row[REPO_LINK]
+                track = row[TRACK]
+                # level = row[LEVEL]
 
-                if repo == '':
-                    continue
+                if repo:
+                    command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
+                    response = invoke_runner(command)
 
+                    if response >= 1:
+                        row.update({SCORE: 'Fail'})
+                    else:
+                        row.update({SCORE: 'Pass'})
+
+                writer.writerow(row)
+
+    return output_file_name
+
+
+def async_json_worker(json, tempdir):
+    """ """
+    output_file_name = gen_rand_string()[0] + '.csv'
+    output_file = f"{tempdir}/{output_file_name}"
+
+    with open(output_file, 'w', newline='') as out:
+        fieldnames = json[0]
+        if fieldnames.__contains__(SCORE) == False:
+            fieldnames.append(SCORE)
+
+        table = json[1:]
+        writer = csv.writer(out)
+
+        count = 0
+        for row in table:
+            if count == 0:
+                writer.writerow(fieldnames)
+                count += 1
+
+            repo = get_matrix_value(REPO_LINK, fieldnames, row)
+            track = get_matrix_value(TRACK, fieldnames, row)
+            # level = get_matrix_value(LEVEL, fieldnames, row)
+
+            if repo:
                 command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
                 response = invoke_runner(command)
 
-                if response >= 1:
-                    row.update({'Score': 'Fail'})
-                else:
-                    row.update({'Score': 'Pass'})
+                score = 'Fail' if response >= 1 else 'Pass'
+                set_matrix_value(SCORE, fieldnames, row, score)
 
-                writer.writerow(row)
+            writer.writerow(row)
 
     return output_file_name
 
@@ -67,3 +105,17 @@ def invoke_runner(command, timeout=500):
     args = shlex.split(f"./scripts/runner.sh {command}")
     response = subprocess.Popen(args)
     return response.wait(timeout)
+
+
+def get_matrix_value(str, header=[], dict=[]):
+    idx = header.index(str)
+    return dict[idx]
+
+
+def set_matrix_value(str, header=[], dict=[], value=''):
+    idx = header.index(str)
+    try:
+        dict[idx] = value
+    except:
+        # if index out of range insert at value
+        dict.insert(idx, value)
