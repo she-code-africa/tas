@@ -3,6 +3,7 @@
 
 set -e
 
+readonly ENGINE_DIR="$(dirname $(PWD))/tas/engines"
 readonly DEFAULT_RUNNER_DIR="/tmp/sca_runner/downloads"
 readonly DEFAULT_RUNNER_TESTCASE="/opt/sca_runner/testcase"
 readonly RANDOM_STRING=$(cat /dev/random | LC_CTYPE=C tr -dc "[:alpha:]" | head -c 20)
@@ -67,13 +68,22 @@ function assert_not_empty() {
 }
 
 function run_test() {
+    local engine_dir="$ENGINE_DIR"
     case $1 in
     python)
-        python test
+        eval "$engine_dir/python" test.py
         shift
         ;;
     javascript)
-        npm run test
+        eval "$engine_dir/node" test.js
+        shift
+        ;;
+    java)
+        eval "$engine_dir/java" test
+        shift
+        ;;
+    php)
+        eval "$engine_dir/php" test
         shift
         ;;
     *)
@@ -92,7 +102,7 @@ function run() {
     local repo=""
     local engine=""
 
-    while [[ $# -gt 0 ]]; do
+    while [[ "$#" -gt 0 ]]; do
         local key="$1"
 
         case "$key" in
@@ -141,13 +151,13 @@ function run() {
 
     cd "$runner_dir" &&
         git clone "$repo" "$RANDOM_STRING" &&
-        cd $RANDOM_STRING
+        cd "$RANDOM_STRING"
 
     # echo "copying testcase folder $testcase => ./$RANDOM_STRING/testcase"
     # cp -R $testcase "$RANDOM_STRING/testcase"
 
     log_info "Invoke test with {$engine} engine"
-    run_test $engine
+    run_test "$engine"
 
     log_info ">> Finished running SCA Assessment"
 
