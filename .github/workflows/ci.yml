@@ -1,4 +1,4 @@
-name: Test
+name: Test and Deploy
 
 on:
   push:
@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  HEROKU_APP_NAME: tas-improv-exec-engine-vx08o0c
+
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,3 +32,26 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test]
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Login to Heroku Container Registry
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku container:login
+
+    - name: Build and Push
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku container:push -a ${{ env.HEROKU_APP_NAME }} web
+
+    - name: Release
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku container:release -a ${{ env.HEROKU_APP_NAME }} web
