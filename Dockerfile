@@ -6,8 +6,6 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY srv/ .
-COPY scrips/ .
-COPY engines/ .
+COPY . .
 
 CMD ["gunicorn", "srv:app"]
