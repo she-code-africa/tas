@@ -81,7 +81,7 @@ function run_test() {
         shift
         ;;
     php)
-        php --versio
+        php --version
         shift
         ;;
     *)
