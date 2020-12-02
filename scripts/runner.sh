@@ -148,7 +148,8 @@ function run() {
     echo
 
     cd "$runner_dir" &&
-        git clone "$repo" "$RANDOM_STRING" &&
+        # diable authentication prompt for private repos
+        GIT_TERMINAL_PROMPT=fals egit clone "$repo" "$RANDOM_STRING" &&
         cd "$RANDOM_STRING"
 
     # echo "copying testcase folder $testcase => ./$RANDOM_STRING/testcase"
