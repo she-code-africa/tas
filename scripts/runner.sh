@@ -3,7 +3,7 @@
 
 set -e
 
-readonly ENGINE_DIR="$(dirname $(PWD))/tas/engines"
+readonly ENGINE_DIR="$(realpath engines)"
 readonly DEFAULT_RUNNER_DIR="/tmp/sca_runner/downloads"
 readonly DEFAULT_RUNNER_TESTCASE="/opt/sca_runner/testcase"
 readonly RANDOM_STRING=$(cat /dev/random | LC_CTYPE=C tr -dc "[:alpha:]" | head -c 20)
@@ -68,22 +68,21 @@ function assert_not_empty() {
 }
 
 function run_test() {
-    local engine_dir="$ENGINE_DIR"
     case $1 in
     python)
-        eval "$engine_dir/python" test.py
+        eval "$ENGINE_DIR/python" test.py
         shift
         ;;
     javascript)
-        eval "$engine_dir/node" test.js
+        eval "$ENGINE_DIR/node" test.js
         shift
         ;;
     java)
-        eval "$engine_dir/java" test
+        eval "$ENGINE_DIR/java" test
         shift
         ;;
     php)
-        eval "$engine_dir/php" test
+        eval "$ENGINE_DIR/php" test
         shift
         ;;
     *)
