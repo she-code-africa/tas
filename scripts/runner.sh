@@ -3,7 +3,6 @@
 
 set -e
 
-readonly ENGINE_DIR="$(realpath engines)"
 readonly DEFAULT_RUNNER_DIR="/tmp/sca_runner/downloads"
 readonly DEFAULT_RUNNER_TESTCASE="/opt/sca_runner/testcase"
 readonly RANDOM_STRING=$(cat /dev/random | LC_CTYPE=C tr -dc "[:alpha:]" | head -c 20)
@@ -70,19 +69,19 @@ function assert_not_empty() {
 function run_test() {
     case $1 in
     python)
-        eval "$ENGINE_DIR/python" test.py
+        python -m unittest
         shift
         ;;
     javascript)
-        eval "$ENGINE_DIR/node" test.js
+        npm run test
         shift
         ;;
     java)
-        eval "$ENGINE_DIR/java" test
+        java --version
         shift
         ;;
     php)
-        eval "$ENGINE_DIR/php" test
+        php --versio
         shift
         ;;
     *)
