@@ -8,4 +8,9 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["gunicorn", "srv:app"]
+ARG PORT=8000
+ENV PORT=$PORT
+
+EXPOSE $PORT
+
+CMD gunicorn srv:app -b 0.0.0.0:$PORT
