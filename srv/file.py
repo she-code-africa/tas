@@ -36,7 +36,8 @@ def upload_file():
         response_filename = helper.async_json_worker(json_data, tempdir)
 
     try:
-        return send_from_directory(tempdir, filename=response_filename, as_attachment=True)
+        return send_from_directory(
+            tempdir, filename=response_filename, as_attachment=True)
     except FileNotFoundError:
         abort(Response('broken file on server'))
     except Exception as e:

@@ -41,7 +41,7 @@ def async_csv_worker(file, tempdir):
             reader = csv.DictReader(file)
 
             fieldnames = list.copy(reader.fieldnames)
-            if fieldnames.__contains__(SCORE) == False:
+            if not fieldnames.__contains__(SCORE):
                 fieldnames.append(SCORE)
 
             writer = csv.DictWriter(out, fieldnames=fieldnames)
@@ -50,16 +50,13 @@ def async_csv_worker(file, tempdir):
             for row in reader:
                 repo = row[REPO_LINK]
                 track = row[TRACK]
-                # level = row[LEVEL]
+                level = row[LEVEL]
 
-                if repo:
-                    command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
-                    response = invoke_runner(command)
-
-                    if response >= 1:
-                        row.update({SCORE: 'Fail'})
-                    else:
-                        row.update({SCORE: 'Pass'})
+                try:
+                    score = filter_execute(repo, track, level, tempdir)
+                    row.update({SCORE: score})
+                except Exception:
+                    pass
 
                 writer.writerow(row)
 
@@ -73,7 +70,7 @@ def async_json_worker(json, tempdir):
 
     with open(output_file, 'w', newline='') as out:
         fieldnames = json[0]
-        if fieldnames.__contains__(SCORE) == False:
+        if not fieldnames.__contains__(SCORE):
             fieldnames.append(SCORE)
 
         table = json[1:]
@@ -87,24 +84,50 @@ def async_json_worker(json, tempdir):
 
             repo = get_matrix_value(REPO_LINK, fieldnames, row)
             track = get_matrix_value(TRACK, fieldnames, row)
-            # level = get_matrix_value(LEVEL, fieldnames, row)
+            level = get_matrix_value(LEVEL, fieldnames, row)
 
-            if repo:
-                command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
-                response = invoke_runner(command)
-
-                score = 'Fail' if response >= 1 else 'Pass'
+            try:
+                score = filter_execute(repo, track, level, tempdir)
                 set_matrix_value(SCORE, fieldnames, row, score)
+            except Exception:
+                pass
 
             writer.writerow(row)
 
     return output_file_name
 
 
+def filter_execute(repo, track, level, tempdir):
+    track_clean = track.split(' ')[0].lower()
+    level_clean = level.split(' ')[0].lower()
+    print(track)
+    print(track_clean)
+    print(level)
+    print(level_clean)
+
+    if not ["beginner"].__contains__(level_clean):
+        raise f"Unsupported Level: {level}"
+
+    if not ['python', 'javascript', 'java', 'php'].__contains__(track_clean):
+        raise f"Unsupported Track: {track}"
+
+    # return appropiate message on empty repos.
+    if not repo:
+        return "Empty Repo link, Assessment not evaluated."
+
+    command = f"--engine {str(track_clean)} --repo {repo} --dir {tempdir}"
+    response = invoke_runner(command)
+    score = 'Fail' if response >= 1 else 'Pass'
+
+    return score
+
+
 def invoke_runner(command, timeout=500):
     args = shlex.split(f"./scripts/runner.sh {command}")
     response = subprocess.Popen(args)
-    return response.wait(timeout)
+    status_code = response.wait(timeout)
+
+    return status_code
 
 
 def get_matrix_value(str, header=[], dict=[]):
@@ -116,6 +139,6 @@ def set_matrix_value(str, header=[], dict=[], value=''):
     idx = header.index(str)
     try:
         dict[idx] = value
-    except:
+    except Exception:
         # if index out of range insert at value
         dict.insert(idx, value)
