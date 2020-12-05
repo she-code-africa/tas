@@ -100,10 +100,6 @@ def async_json_worker(json, tempdir):
 def filter_execute(repo, track, level, tempdir):
     track_clean = track.split(' ')[0].lower()
     level_clean = level.split(' ')[0].lower()
-    print(track)
-    print(track_clean)
-    print(level)
-    print(level_clean)
 
     if not ["beginner"].__contains__(level_clean):
         raise f"Unsupported Level: {level}"
@@ -116,18 +112,19 @@ def filter_execute(repo, track, level, tempdir):
         return "Empty Repo link, Assessment not evaluated."
 
     command = f"--engine {str(track_clean)} --repo {repo} --dir {tempdir}"
-    response = invoke_runner(command)
-    score = 'Fail' if response >= 1 else 'Pass'
-
-    return score
+    return invoke_runner(command)
 
 
 def invoke_runner(command, timeout=500):
     args = shlex.split(f"./scripts/runner.sh {command}")
     response = subprocess.Popen(args)
-    status_code = response.wait(timeout)
+    status_code = int(response.wait(timeout))
 
-    return status_code
+    if status_code == 128:
+        return 'Unauthorized, Private Repo'
+    if status_code == 0:
+        return 'Pass'
+    return 'Fail'
 
 
 def get_matrix_value(str, header=[], dict=[]):

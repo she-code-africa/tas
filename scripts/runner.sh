@@ -69,7 +69,7 @@ function assert_not_empty() {
 function run_test() {
     case $1 in
     python)
-        python -m unittest
+        pytest test.py
         shift
         ;;
     javascript)
@@ -147,10 +147,10 @@ function run() {
     echo "--testcase: $testcase"
     echo
 
-    cd "$runner_dir" &&
-        # diable authentication prompt for private repos
-        GIT_TERMINAL_PROMPT=false git clone "$repo" "$RANDOM_STRING" &&
-        cd "$RANDOM_STRING"
+    cd "$runner_dir"
+    # diable authentication prompt for private repos
+    GIT_TERMINAL_PROMPT=false git clone "$repo" "$RANDOM_STRING"
+    cd "$RANDOM_STRING"
 
     # echo "copying testcase folder $testcase => ./$RANDOM_STRING/testcase"
     # cp -R $testcase "$RANDOM_STRING/testcase"
@@ -159,7 +159,6 @@ function run() {
     run_test "$engine"
 
     log_info ">> Finished running SCA Assessment"
-
     return $?
 }
 
