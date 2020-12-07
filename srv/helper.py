@@ -2,6 +2,8 @@ import csv
 import shlex
 import random
 import subprocess
+import asyncio
+from asyncio import AbstractEventLoop
 
 REPO_LINK = 'Please submit the URL to your technical assessment solution here'
 TRACK = 'What field are you signing up for?'
@@ -14,7 +16,7 @@ def gen_rand_string(char_length=10, has_special_character=False):
     random_str = ''
 
     for _ in range(char_length):
-        if has_special_character == True:
+        if has_special_character:
             random_int = random.randint(0, 255)
         else:
             random_int = random.randint(97, 97 + 26 - 1)
@@ -25,7 +27,7 @@ def gen_rand_string(char_length=10, has_special_character=False):
     return (random_str, len(random_str))
 
 
-def async_csv_worker(file, tempdir):
+async def async_csv_worker(loop, file, tempdir):
     """ """
 
     input_file_name = gen_rand_string()[0] + '.csv'
@@ -47,23 +49,30 @@ def async_csv_worker(file, tempdir):
             writer = csv.DictWriter(out, fieldnames=fieldnames)
             writer.writeheader()
 
+            tasks = []
             for row in reader:
                 repo = row[REPO_LINK]
                 track = row[TRACK]
                 level = row[LEVEL]
 
                 try:
-                    score = filter_execute(repo, track, level, tempdir)
-                    row.update({SCORE: score})
+                    command = filter_execute(repo, track, level, tempdir)
+                    tasks.append(
+                        (loop.create_task(invoke_runner(command)), row)
+                    )
                 except Exception:
                     pass
 
+            for task, row in tasks:
+                score = await task
+
+                row.update({SCORE: score})
                 writer.writerow(row)
 
     return output_file_name
 
 
-def async_json_worker(json, tempdir):
+async def async_json_worker(loop, json, tempdir):
     """ """
     output_file_name = gen_rand_string()[0] + '.csv'
     output_file = f"{tempdir}/{output_file_name}"
@@ -77,6 +86,7 @@ def async_json_worker(json, tempdir):
         writer = csv.writer(out)
 
         count = 0
+        tasks = []
         for row in table:
             if count == 0:
                 writer.writerow(fieldnames)
@@ -87,11 +97,14 @@ def async_json_worker(json, tempdir):
             level = get_matrix_value(LEVEL, fieldnames, row)
 
             try:
-                score = filter_execute(repo, track, level, tempdir)
-                set_matrix_value(SCORE, fieldnames, row, score)
+                command = filter_execute(repo, track, level, tempdir)
+                tasks.append((loop.create_task(invoke_runner(command)), row))
             except Exception:
                 pass
 
+        for task, row in tasks:
+            score = await task
+            set_matrix_value(SCORE, fieldnames, row, score)
             writer.writerow(row)
 
     return output_file_name
@@ -111,19 +124,20 @@ def filter_execute(repo, track, level, tempdir):
     if not repo:
         return "Empty Repo link, Assessment not evaluated."
 
-    command = f"--engine {str(track_clean)} --repo {repo} --dir {tempdir}"
-    return invoke_runner(command)
+    return f"--engine {str(track_clean)} --repo {repo} --dir {tempdir}"
 
 
-def invoke_runner(command, timeout=500):
+async def invoke_runner(command, timeout=500):
     args = shlex.split(f"./scripts/runner.sh {command}")
     response = subprocess.Popen(args)
     status_code = int(response.wait(timeout))
 
     if status_code == 128:
         return 'Unauthorized, Private Repo'
+
     if status_code == 0:
         return 'Pass'
+
     return 'Fail'
 
 
