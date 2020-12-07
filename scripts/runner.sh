@@ -81,7 +81,8 @@ function run_test() {
         shift
         ;;
     php)
-        php --version
+        composer install
+        ./vendor/bin/phpunit tests
         shift
         ;;
     *)
