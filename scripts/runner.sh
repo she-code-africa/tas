@@ -69,7 +69,7 @@ function assert_not_empty() {
 function run_test() {
     case $1 in
     python)
-        pytest test.py
+        pytest -m unittest discover -v
         shift
         ;;
     javascript)
