@@ -73,6 +73,7 @@ function run_test() {
         shift
         ;;
     javascript)
+        npm install
         npm run test
         shift
         ;;
