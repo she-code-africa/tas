@@ -3,12 +3,13 @@ FROM python:3.8
 WORKDIR /app
 
 RUN apt update \
-      &&  apt-get install -y default-jre \
-      && apt-get install -y curl php composer \
+      &&  apt-get install -y openjdk-8-jre-headless ant \
+      && apt-get install -y curl php composer php-mbstring php-xml \
       && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
       && apt-get install -y nodejs \
       && curl -L https://www.npmjs.com/install.sh | sh
 
+RUN php --ini
 
 COPY requirements.txt .
 
