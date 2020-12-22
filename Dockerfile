@@ -19,12 +19,20 @@ RUN apt update \
 # install testsuite dependencies
 # phpunit: php testsuite
 # jest: node testsuite
-RUN apt install -y phpunit \
+# junit4: java testsuite requirements
+RUN apt install -y phpunit junit4 \
       && npm install -g jest
 
+# set env CLASSPATH required by ant (java build tool)
+ENV CLASSPATH=/usr/share/java/junit4.jar
+
+
+# copy dependencies for server
 COPY requirements.txt .
 
+# install dependencies for server
 RUN pip install -r requirements.txt
+
 
 COPY . .
 
