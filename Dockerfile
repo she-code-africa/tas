@@ -3,18 +3,28 @@ FROM python:3.8
 WORKDIR /app
 
 RUN apt update \
-      &&  apt-get install -y openjdk-8-jre-headless ant \
-      && apt-get install -y curl php composer php-mbstring php-xml \
+      # curl: command line tool for transferring data with URL syntax
+      # make: utility for directing compilation
+      # default-jdk-headless: Standard Java or Java compatible Development Kit (headless)
+      # ant: Java based build tool like make
+      # nodejs: evented I/O for V8 javascript - runtime executable
+      # php: server-side, HTML-embedded scripting language (default)
+      && apt-get install -y curl make default-jdk-headless ant nodejs php \
+      # add node source.
       && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
-      && apt-get install -y nodejs \
+      # install npmjs.
       && curl -L https://www.npmjs.com/install.sh | sh
 
-RUN php --ini
+
+# install testsuite dependencies
+# phpunit: php testsuite
+# jest: node testsuite
+RUN apt install -y phpunit \
+      && npm install -g jest
 
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
-
 
 COPY . .
 

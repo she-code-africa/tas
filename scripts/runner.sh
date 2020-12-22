@@ -69,21 +69,19 @@ function assert_not_empty() {
 function run_test() {
     case $1 in
     python)
-        pytest -m unittest discover -v
+        python -m unittest discover -v
         shift
         ;;
     javascript)
-        npm install
-        npm run test
+        /usr/bin/jest
         shift
         ;;
     java)
-        java --version
+        ant test
         shift
         ;;
     php)
-        composer install
-        ./vendor/bin/phpunit tests
+        /usr/bin/phpunit tests
         shift
         ;;
     *)
