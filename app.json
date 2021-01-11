@@ -1,4 +1,4 @@
 {
   "name": "sca-test-assessment-server",
-  "stack": "heroku-18"
+  "stack": "container"
 }

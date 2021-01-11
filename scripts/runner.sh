@@ -69,11 +69,19 @@ function assert_not_empty() {
 function run_test() {
     case $1 in
     python)
-        python test
+        python -m unittest discover -v
         shift
         ;;
     javascript)
-        npm run test
+        /usr/bin/jest
+        shift
+        ;;
+    java)
+        ant test
+        shift
+        ;;
+    php)
+        /usr/bin/phpunit tests
         shift
         ;;
     *)
@@ -92,7 +100,7 @@ function run() {
     local repo=""
     local engine=""
 
-    while [[ $# -gt 0 ]]; do
+    while [[ "$#" -gt 0 ]]; do
         local key="$1"
 
         case "$key" in
@@ -139,18 +147,18 @@ function run() {
     echo "--testcase: $testcase"
     echo
 
-    cd "$runner_dir" &&
-        git clone "$repo" "$RANDOM_STRING" &&
-        cd $RANDOM_STRING
+    cd "$runner_dir"
+    # diable authentication prompt for private repos
+    GIT_TERMINAL_PROMPT=false git clone "$repo" "$RANDOM_STRING"
+    cd "$RANDOM_STRING"
 
     # echo "copying testcase folder $testcase => ./$RANDOM_STRING/testcase"
     # cp -R $testcase "$RANDOM_STRING/testcase"
 
     log_info "Invoke test with {$engine} engine"
-    run_test $engine
+    run_test "$engine"
 
     log_info ">> Finished running SCA Assessment"
-
     return $?
 }
 

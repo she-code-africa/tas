@@ -9,21 +9,6 @@ LEVEL = 'What track level are you signing up for'
 SCORE = 'Score'
 
 
-def gen_rand_string(char_length=10, has_special_character=False):
-    """Generate random string with the specificed character char_length"""
-    random_str = ''
-
-    for _ in range(char_length):
-        if has_special_character == True:
-            random_int = random.randint(0, 255)
-        else:
-            random_int = random.randint(97, 97 + 26 - 1)
-            flip_bit = random.randint(0, 1)
-            random_int = random_int - 32 if flip_bit == 1 else random_int
-        random_str += (chr(random_int))
-
-    return (random_str, len(random_str))
-
 
 def async_csv_worker(file, tempdir):
     """ """
@@ -41,7 +26,7 @@ def async_csv_worker(file, tempdir):
             reader = csv.DictReader(file)
 
             fieldnames = list.copy(reader.fieldnames)
-            if fieldnames.__contains__(SCORE) == False:
+            if not fieldnames.__contains__(SCORE):
                 fieldnames.append(SCORE)
 
             writer = csv.DictWriter(out, fieldnames=fieldnames)
@@ -50,18 +35,15 @@ def async_csv_worker(file, tempdir):
             for row in reader:
                 repo = row[REPO_LINK]
                 track = row[TRACK]
-                # level = row[LEVEL]
+                level = row[LEVEL]
 
-                if repo:
-                    command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
-                    response = invoke_runner(command)
-
-                    if response >= 1:
-                        row.update({SCORE: 'Fail'})
-                    else:
-                        row.update({SCORE: 'Pass'})
-
-                writer.writerow(row)
+                try:
+                    command = filter_execute(repo, track, level, tempdir)
+                    score = invoke_runner(command)
+                    row.update({SCORE: score})
+                    writer.writerow(row)
+                except Exception:
+                    pass
 
     return output_file_name
 
@@ -73,7 +55,7 @@ def async_json_worker(json, tempdir):
 
     with open(output_file, 'w', newline='') as out:
         fieldnames = json[0]
-        if fieldnames.__contains__(SCORE) == False:
+        if not fieldnames.__contains__(SCORE):
             fieldnames.append(SCORE)
 
         table = json[1:]
@@ -87,24 +69,48 @@ def async_json_worker(json, tempdir):
 
             repo = get_matrix_value(REPO_LINK, fieldnames, row)
             track = get_matrix_value(TRACK, fieldnames, row)
-            # level = get_matrix_value(LEVEL, fieldnames, row)
+            level = get_matrix_value(LEVEL, fieldnames, row)
 
-            if repo:
-                command = f"--engine {str(track.split(' ')[0]).lower()} --repo {repo} --dir {tempdir}"
-                response = invoke_runner(command)
-
-                score = 'Fail' if response >= 1 else 'Pass'
+            try:
+                command = filter_execute(repo, track, level, tempdir)
+                score = invoke_runner(command)
                 set_matrix_value(SCORE, fieldnames, row, score)
-
-            writer.writerow(row)
+                writer.writerow(row)
+            except Exception:
+                pass
 
     return output_file_name
+
+
+def filter_execute(repo, track, level, tempdir):
+    track_clean = track.split(' ')[0].lower()
+    level_clean = level.split(' ')[0].lower()
+
+    if not ["beginner"].__contains__(level_clean):
+        raise f"Unsupported Level: {level}"
+
+    if not ['python', 'javascript', 'java', 'php'].__contains__(track_clean):
+        raise f"Unsupported Track: {track}"
+
+    # return appropiate message on empty repos.
+    if not repo:
+        return "Empty Repo link, Assessment not evaluated."
+
+    return f"--engine {str(track_clean)} --repo {repo} --dir {tempdir}"
 
 
 def invoke_runner(command, timeout=500):
     args = shlex.split(f"./scripts/runner.sh {command}")
     response = subprocess.Popen(args)
-    return response.wait(timeout)
+    status_code = int(response.wait(timeout))
+
+    if status_code == 128:
+        return 'Unauthorized, Private Repo'
+
+    if status_code == 0:
+        return 'Pass'
+
+    return 'Fail'
 
 
 def get_matrix_value(str, header=[], dict=[]):
@@ -116,6 +122,22 @@ def set_matrix_value(str, header=[], dict=[], value=''):
     idx = header.index(str)
     try:
         dict[idx] = value
-    except:
+    except Exception:
         # if index out of range insert at value
         dict.insert(idx, value)
+
+
+def gen_rand_string(char_length=10, has_special_character=False):
+    """Generate random string with the specificed character char_length"""
+    random_str = ''
+
+    for _ in range(char_length):
+        if has_special_character:
+            random_int = random.randint(0, 255)
+        else:
+            random_int = random.randint(97, 97 + 26 - 1)
+            flip_bit = random.randint(0, 1)
+            random_int = random_int - 32 if flip_bit == 1 else random_int
+        random_str += (chr(random_int))
+
+    return (random_str, len(random_str))

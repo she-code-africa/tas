@@ -29,14 +29,15 @@ def upload_file():
             return response
 
         file.filename = secure_filename(file.filename)
-        response_filename = helper.async_csv_worker(file, tempdir)
+        response_filename =  helper.async_csv_worker(file, tempdir)
 
     else:
         json_data = json.loads(request.data)['file']
         response_filename = helper.async_json_worker(json_data, tempdir)
 
     try:
-        return send_from_directory(tempdir, filename=response_filename, as_attachment=True)
+        return send_from_directory(
+            tempdir, filename=response_filename, as_attachment=True)
     except FileNotFoundError:
         abort(Response('broken file on server'))
     except Exception as e:
